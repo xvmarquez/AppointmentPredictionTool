@@ -5,6 +5,8 @@ from sklearn.preprocessing import LabelEncoder
 import pickle
 import datetime
 
+import time 
+
 # Load the predictor model from a pickle file
 model = pickle.load(open('model_V2.pkl', 'rb'))
 
@@ -30,12 +32,27 @@ def encode_features(df, encoder_dict):
     return df
 
 def main():
-    st.title("CHLA")
+    
+    st.markdown("""
+    <style>
+        .centered-text {
+            text-align: center;
+            font-size: 24px; /* or any other size */
+            font-weight: bold; /* if you want it bold */
+        }
+    </style>
+    <div class="centered-text">CHLA Resource</div>
+""", unsafe_allow_html=True)
+
+    
+    #st.title("CHLA Resource - Predictor Tool")
     html_temp = """
-    <div style="background:#025246 ;padding:10px">
+    <div style="background:#22333b ;padding:10px">
     <h2 style="color:white;text-align:center;">Appointment No Show Prediction App </h2>
     </div>
-    """
+    """  
+
+    
     st.markdown(html_temp, unsafe_allow_html = True)
 
 
@@ -68,7 +85,7 @@ def main():
     # Calculating the required features from the appointment date and time
     DAY_OF_WEEK = appointment_date.weekday() + 1  # Monday is 0 and Sunday is 6
     if not (0 <= DAY_OF_WEEK <= 5):
-        st.error("Please select a weekday (Monday to Saturday).")
+        st.error("Clinics are only open Monday to Saturday, please correct the appointment date.")
         return
     
     NUM_OF_MONTH = appointment_date.month
@@ -76,12 +93,14 @@ def main():
     WEEK_OF_MONTH = get_week_of_month(appointment_date.year, appointment_date.month, appointment_date.day)
     CLINIC = st.selectbox("Clinic Name", ['ARCADIA CARE CENTER', 'BAKERSFIELD CARE CLINIC', 'ENCINO CARE CENTER', 'SANTA MONICA CLINIC', 'SOUTH BAY CARE CENTER', 'VALENCIA CARE CENTER'])
     TOTAL_NUMBER_OF_CANCELLATIONS = st.number_input("Number of Cancellations",0)
-    TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT = st.number_input("Number of Not Checked-out Appointments",0, help="Number of appointments where the patient did not check out correctly.") 
+    TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT = st.number_input("Number of Not Checked-Out Appointments",0, help="Number of appointments where the patient did not check out correctly.") 
     TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT = st.number_input("Number of Successful Appointment",0)
     LEAD_TIME = LEAD_TIME
     TOTAL_NUMBER_OF_RESCHEDULED = st.number_input("Number of Rescheduled Appointment",0)
     TOTAL_NUMBER_OF_NOSHOW = st.number_input("Number of No-Shows on record",0)
     AGE = st.number_input("Age of Patient",0)
+    if AGE < 0 or AGE > 120:
+        st.error("Please enter a valid age.")
     IS_REPEAT = st.checkbox("Repeat Patient") 
     ETHNICITY_STANDARDIZE = st.selectbox("Ethnicity",['Hispanic', 'Non-Hispanic', 'Others'])
     APPT_TYPE_STANDARDIZE = st.selectbox("Appointment Type",['Follow-up', 'New', 'Others'])
@@ -118,17 +137,21 @@ def main():
         # Encode the categorical columns
         df = encode_features(df, encoder_dict)
 
-        # Now, all your features should be numerical, and you can attempt prediction
-        features_list = df.values
-        prediction = model.predict(features_list)
+        with st.spinner('Processing... Please wait'):
+            time.sleep(2)
+            # Convert the DataFrame into a list of values and make a prediction
+            features_list = df.values
+            prediction = model.predict(features_list)
+            
 
         output = int(prediction[0])
+        
         if output == 1:
-            text = "NOT"
+            message = 'The patient will NOT attend.'
+            st.error(message)  # Using st.error to highlight a potential issue (patient not attending)
         else:
-            text = ""
-
-        st.success('The Patient will {} attend'.format(text))
+            message = 'The patient will attend.'
+            st.success(message)
 
 if __name__=='__main__':
     main()

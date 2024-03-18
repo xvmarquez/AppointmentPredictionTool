@@ -71,7 +71,7 @@ def main():
     booking_date = st.date_input("Booking Date", min_value= None, value=today)
     if booking_date < datetime.today().date() - timedelta(days=365):
         st.error("Booking Date is too far in the past. Please enter a date within the last year.")
-    appointment_date = st.date_input("Appointment Date", min_value=datetime.date.today())
+    appointment_date = st.date_input("Appointment Date", min_value=datetime.today())
     
     #appointment_time = st.time_input("Appointment Time")
     # Validate the time input

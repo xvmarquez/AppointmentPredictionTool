@@ -65,7 +65,7 @@ def main():
     st.info("Please fill in the details of the appointment to predict if the patient will attend")
 
     # Date input for the appointment
-    today = date.today()
+    today = datetime.today()
 
     # First Date Inputs
     booking_date = st.date_input("Booking Date", min_value= None, value=today)

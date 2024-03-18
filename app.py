@@ -17,8 +17,14 @@ with open('encoder.pkl', 'rb') as pkl_file:
 
 def encode_features(df, encoder_dict):
     # For each categorical feature, apply the encoding
-    category_col = ['APPT_DATE', 'BOOK_DATE', 'ZIPCODE', 'CLINIC', 'APPT_TYPE_STANDARDIZE',
+    category_col = ['BOOK_DATE', 'ZIPCODE', 'CLINIC', 'APPT_TYPE_STANDARDIZE',
        'ETHNICITY_STANDARDIZE', 'RACE_STANDARDIZE']
+    
+    # Convert date columns to string before encoding
+    if 'BOOK_DATE' in df.columns:
+        df['BOOK_DATE'] = df['BOOK_DATE'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notnull(x) else x)
+
+
     for col in category_col:
         if col in encoder_dict: 
             le = LabelEncoder()
@@ -89,21 +95,21 @@ def main():
         st.error("Clinics are only open Monday to Saturday, please correct the appointment date.")
         return
     
-    NUM_OF_MONTH = appointment_date.month
-    HOUR_OF_DAY = appointment_time.hour
+    #NUM_OF_MONTH = appointment_date.month
+    #HOUR_OF_DAY = appointment_time.hour
     WEEK_OF_MONTH = get_week_of_month(appointment_date.year, appointment_date.month, appointment_date.day)
     CLINIC = st.selectbox("Clinic Name", ['ARCADIA CARE CENTER', 'BAKERSFIELD CARE CLINIC', 'ENCINO CARE CENTER', 'SANTA MONICA CLINIC', 'SOUTH BAY CARE CENTER', 'VALENCIA CARE CENTER'])
     ZIPCODE = st.text_input("Zipcode",'00000')
-    APPT_NUM = st.number_input("Number of Previous Appointments",0)
-    TOTAL_NUMBER_OF_CANCELLATIONS = st.number_input("Number of Cancellations",0)
+    #APPT_NUM = st.number_input("Number of Previous Appointments",0)
+    #TOTAL_NUMBER_OF_CANCELLATIONS = st.number_input("Number of Cancellations",0)
     TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT = st.number_input("Number of Not Checked-Out Appointments",0, help="Number of appointments where the patient did not check out correctly.") 
     TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT = st.number_input("Number of Successful Appointment",0)
     LEAD_TIME = LEAD_TIME
-    TOTAL_NUMBER_OF_RESCHEDULED = st.number_input("Number of Rescheduled Appointment",0)
+    #TOTAL_NUMBER_OF_RESCHEDULED = st.number_input("Number of Rescheduled Appointment",0)
     TOTAL_NUMBER_OF_NOSHOW = st.number_input("Number of No-Shows on record",0)
-    AGE = st.number_input("Age of Patient",0)
-    if AGE < 0 or AGE > 120:
-        st.error("Please enter a valid age.")
+    #AGE = st.number_input("Age of Patient",0)
+    #if AGE < 0 or AGE > 120:
+    #   st.error("Please enter a valid age.") 
     IS_REPEAT = st.checkbox("Repeat Patient") 
     ETHNICITY_STANDARDIZE = st.selectbox("Ethnicity",['Hispanic', 'Non-Hispanic', 'Others'])
     APPT_TYPE_STANDARDIZE = st.selectbox("Appointment Type",['Follow-up', 'New', 'Others'])
@@ -114,24 +120,14 @@ def main():
     if st.button("Predict"):
 
         data = { 
-        'APPT_DATE': appointment_date,
         'BOOK_DATE': booking_date,
         'ZIPCODE': ZIPCODE,
         'CLINIC': CLINIC, 
-        'APPT_NUM': APPT_NUM,
         'DAY_OF_WEEK': DAY_OF_WEEK,
         'WEEK_OF_MONTH': WEEK_OF_MONTH,
-        'NUM_OF_MONTH': NUM_OF_MONTH,
-        'HOUR_OF_DAY': HOUR_OF_DAY,
-        'AGE': AGE, 
-        
         'LEAD_TIME': LEAD_TIME, 
         'IS_REPEAT':IS_REPEAT, 
         'APPT_TYPE_STANDARDIZE':APPT_TYPE_STANDARDIZE,
-
-
-       'TOTAL_NUMBER_OF_CANCELLATIONS':int(TOTAL_NUMBER_OF_CANCELLATIONS), 
-        'TOTAL_NUMBER_OF_RESCHEDULED':int(TOTAL_NUMBER_OF_RESCHEDULED),
        'TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT':int(TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT),
        'TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT':int(TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT), 
         'TOTAL_NUMBER_OF_NOSHOW':int(TOTAL_NUMBER_OF_NOSHOW), 

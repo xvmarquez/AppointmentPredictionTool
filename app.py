@@ -4,9 +4,6 @@ import streamlit as st
 from sklearn.preprocessing import LabelEncoder
 import pickle
 from datetime import datetime, timedelta
-
-
-
 import time 
 
 # Load the predictor model from a pickle file
@@ -68,7 +65,7 @@ def main():
     st.info("Please fill in the details of the appointment to predict if the patient will attend")
 
     # Date input for the appointment
-    today = datetime.date.today()
+    today = date.today()
 
     # First Date Inputs
     booking_date = st.date_input("Booking Date", min_value= None, value=today)

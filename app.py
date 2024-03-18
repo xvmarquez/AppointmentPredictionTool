@@ -74,9 +74,9 @@ def main():
     
     #appointment_time = st.time_input("Appointment Time")
     # Validate the time input
-    if not (7 <= appointment_time.hour <= 16):
-        st.error("Please select a time between 07:00 and 16:00.")
-        return  # Early return to prevent proceeding with invalid input
+    #if not (7 <= appointment_time.hour <= 16):
+        #st.error("Please select a time between 07:00 and 16:00.")
+        #return  # Early return to prevent proceeding with invalid input
     
     LEAD_TIME = (appointment_date - booking_date).days
     if LEAD_TIME < 0:

@@ -123,9 +123,9 @@ def main():
     #if AGE < 0 or AGE > 120:
     #   st.error("Please enter a valid age.") 
     IS_REPEAT = st.checkbox("Repeat Patient") 
-    ETHNICITY_STANDARDIZE = st.selectbox("Ethnicity",['Hispanic', 'Non-Hispanic', 'Others'])
-    APPT_TYPE_STANDARDIZE = st.selectbox("Appointment Type",['Follow-up', 'New', 'Others'])
-    RACE_STANDARDIZE =  st.selectbox("Race",['African', 'Asian','European','Middle Eastern', 'North American', 'Other','South American'])
+    ETHNICITY_STANDARDIZE = st.selectbox("Ethnicity",['Hispanic', 'Non-Hispanic', 'Other'])
+    APPT_TYPE_STANDARDIZE = st.selectbox("Appointment Type",['Follow-up', 'New', 'Other'])
+    RACE_STANDARDIZE =  st.selectbox("Race",['African', 'Asian','European','Middle Eastern', 'North American','South American', 'Other'])
 
     
 

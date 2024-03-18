@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 from sklearn.preprocessing import LabelEncoder
 import pickle
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import time 
 
 # Load the predictor model from a pickle file
@@ -85,7 +85,7 @@ def main():
         return
 
     def get_week_of_month(year, month, day):
-        first_day = datetime.date(year, month, 1)
+        first_day = date(year, month, 1)
         first_day_weekday = first_day.weekday()
         if first_day_weekday == 6:
             first_day_weekday = -1

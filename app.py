@@ -3,7 +3,9 @@ import pandas as pd
 import streamlit as st
 from sklearn.preprocessing import LabelEncoder
 import pickle
-import datetime
+from datetime import datetime, timedelta
+
+
 
 import time 
 
@@ -70,6 +72,8 @@ def main():
 
     # First Date Inputs
     booking_date = st.date_input("Booking Date", min_value= None, value=today)
+    if booking_date < datetime.today().date() - timedelta(days=365):
+        st.error("Booking Date is too far in the past. Please enter a date within the last year.")
     appointment_date = st.date_input("Appointment Date", min_value=datetime.date.today())
     
     #appointment_time = st.time_input("Appointment Time")
@@ -101,13 +105,21 @@ def main():
     WEEK_OF_MONTH = get_week_of_month(appointment_date.year, appointment_date.month, appointment_date.day)
     CLINIC = st.selectbox("Clinic Name", ['ARCADIA CARE CENTER', 'BAKERSFIELD CARE CLINIC', 'ENCINO CARE CENTER', 'SANTA MONICA CLINIC', 'SOUTH BAY CARE CENTER', 'VALENCIA CARE CENTER'])
     ZIPCODE = st.text_input("Zipcode",'00000')
+    if len(ZIPCODE) != 5 or not ZIPCODE.isdigit():
+        st.error("Please enter a valid 5-digit Zipcode.")
     #APPT_NUM = st.number_input("Number of Previous Appointments",0)
     #TOTAL_NUMBER_OF_CANCELLATIONS = st.number_input("Number of Cancellations",0)
     TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT = st.number_input("Number of Not Checked-Out Appointments",0, help="Number of appointments where the patient did not check out correctly.") 
+    if TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT > 50:  
+        st.error("The number of Not Checked-Out Appointments seems too high.")
     TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT = st.number_input("Number of Successful Appointment",0)
+    if TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT > 200:
+        st.error("The number of Successful Appointments seems too high.")
     LEAD_TIME = LEAD_TIME
     #TOTAL_NUMBER_OF_RESCHEDULED = st.number_input("Number of Rescheduled Appointment",0)
     TOTAL_NUMBER_OF_NOSHOW = st.number_input("Number of No-Shows on record",0)
+    if TOTAL_NUMBER_OF_NOSHOW > 100:
+        st.error("The number of No-Shows seems too high.")
     #AGE = st.number_input("Age of Patient",0)
     #if AGE < 0 or AGE > 120:
     #   st.error("Please enter a valid age.") 

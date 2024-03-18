@@ -71,7 +71,8 @@ def main():
     # First Date Inputs
     booking_date = st.date_input("Booking Date", min_value= None, value=today)
     appointment_date = st.date_input("Appointment Date", min_value=datetime.date.today())
-    appointment_time = st.time_input("Appointment Time")
+    
+    #appointment_time = st.time_input("Appointment Time")
     # Validate the time input
     if not (7 <= appointment_time.hour <= 16):
         st.error("Please select a time between 07:00 and 16:00.")

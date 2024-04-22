@@ -3,173 +3,113 @@ import pandas as pd
 import streamlit as st
 from sklearn.preprocessing import LabelEncoder
 import pickle
-from datetime import datetime, timedelta, date
+from titlecase import titlecase
 import time 
 
-# Load the predictor model from a pickle file
-model = pickle.load(open('model.pkl', 'rb'))
+def load_data(file_path):
+    return pd.read_csv(file_path)
 
-# Load the encoder dictionary from a pickle file
-with open('encoder.pkl', 'rb') as pkl_file:
-    encoder_dict = pickle.load(pkl_file)
-
-
-def encode_features(df, encoder_dict):
-    # For each categorical feature, apply the encoding
-    category_col = ['BOOK_DATE', 'ZIPCODE', 'CLINIC', 'APPT_TYPE_STANDARDIZE',
-       'ETHNICITY_STANDARDIZE', 'RACE_STANDARDIZE']
-    
-    # Convert date columns to string before encoding
-    if 'BOOK_DATE' in df.columns:
-        df['BOOK_DATE'] = df['BOOK_DATE'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notnull(x) else x)
-
-
-    for col in category_col:
-        if col in encoder_dict: 
-            le = LabelEncoder()
-            le.classes_ = np.array(encoder_dict[col], dtype=object)  # Load the encoder classes for this column
-
-            # Handle unknown categories by using 'transform' method and a lambda function
-            df[col] = df[col].apply(lambda x: x if x in le.classes_ else 'Unknown')
-            df[col] = le.transform(df[col])
-
-    # Encode the IS_REPEAT column
-    df['IS_REPEAT'] = df['IS_REPEAT'].apply(lambda x: 1 if x == 'Yes' else 0)
-    return df
+# Load data and parse dates
+df = load_data("CHLA_clean_data_2024_Appointments.csv")
+df['APPT_DATE'] = pd.to_datetime(df['APPT_DATE'], format='%m/%d/%y %H:%M')
 
 def main():
-    
     st.markdown("""
     <style>
         .centered-text {
             text-align: center;
-            font-size: 24px; 
-            font-weight: bold; 
+            font-size: 24px; /* or any other size */
+            font-weight: bold; /* if you want it bold */
         }
     </style>
     <div class="centered-text">CHLA Resource</div>
-""", unsafe_allow_html=True)
-
+    """, unsafe_allow_html=True)
     
-    #st.title("CHLA Resource - Predictor Tool")
     html_temp = """
     <div style="background:#22333b ;padding:10px">
     <h2 style="color:white;text-align:center;">Appointment No Show Prediction App </h2>
     </div>
-    """  
-
-    
-    st.markdown(html_temp, unsafe_allow_html = True)
-
-
+    """
+    st.markdown(html_temp, unsafe_allow_html=True)
     st.info("Please fill in the details of the appointment to predict if the patient will attend")
 
-    # Date input for the appointment
-    today = datetime.today()
+    ### Date inputs
+    col1, col2 = st.columns([1,1])
+    with col1:
+        start_datetime = st.date_input("Start Date", min_value=df['APPT_DATE'].min(), max_value=df['APPT_DATE'].max())
+    with col2:
+        end_datetime = st.date_input("End Date", min_value=df['APPT_DATE'].min(), max_value=df['APPT_DATE'].max())
 
-    # First Date Inputs
-    booking_date = st.date_input("Booking Date", min_value= None, value=today)
-    if booking_date < datetime.today().date() - timedelta(days=365):
-        st.error("Booking Date is too far in the past. Please enter a date within the last year.")
-    appointment_date = st.date_input("Appointment Date", min_value=datetime.today())
-    if appointment_date > datetime.today().date() + timedelta(days=730):
-        st.error("Appointment Date is too far in the future. Please enter a date within the next two years.")
+    start_datetime = pd.to_datetime(start_datetime)
+    end_datetime = pd.to_datetime(end_datetime)
+
+    if start_datetime > end_datetime:
+        st.error("End Date should be after Start Date")
+
+    ### Filter df by date inputs
+    if start_datetime and end_datetime:
+        mask = (df['APPT_DATE'] >= start_datetime) & (df['APPT_DATE'] <= end_datetime)
+        fdf = df[mask]
+
+    if not fdf.empty:
         
-    #appointment_time = st.time_input("Appointment Time")
-    # Validate the time input
-    #if not (7 <= appointment_time.hour <= 16):
-        #st.error("Please select a time between 07:00 and 16:00.")
-        #return  # Early return to prevent proceeding with invalid input
-    
-    LEAD_TIME = (appointment_date - booking_date).days
-    if LEAD_TIME < 0:
-        st.error("Appointment date cannot be before booking date.")
-        return
+        ### Select and filter fdf by clinic
+        clinic_selector = st.multiselect("Select a Clinic", fdf['CLINIC'].unique())
+        if clinic_selector:
+            fdf = fdf[fdf['CLINIC'].isin(clinic_selector)]
 
-    def get_week_of_month(year, month, day):
-        first_day = date(year, month, 1)
-        first_day_weekday = first_day.weekday()
-        if first_day_weekday == 6:
-            first_day_weekday = -1
-        return ((day + first_day_weekday) // 7) + 1
-    
-    # Calculating the required features from the appointment date and time
-    DAY_OF_WEEK = appointment_date.weekday() + 1  # Monday is 0 and Sunday is 6
-    if not (0 <= DAY_OF_WEEK <= 5):
-        st.error("Clinics are only open Monday to Saturday, please correct the appointment date.")
-        return
-    
-    #NUM_OF_MONTH = appointment_date.month
-    #HOUR_OF_DAY = appointment_time.hour
-    WEEK_OF_MONTH = get_week_of_month(appointment_date.year, appointment_date.month, appointment_date.day)
-    CLINIC = st.selectbox("Clinic Name", ['ARCADIA CARE CENTER', 'BAKERSFIELD CARE CLINIC', 'ENCINO CARE CENTER', 'SANTA MONICA CLINIC', 'SOUTH BAY CARE CENTER', 'VALENCIA CARE CENTER'])
-    ZIPCODE = st.text_input("Zipcode",'00000')
-    if len(ZIPCODE) != 5 or not ZIPCODE.isdigit():
-        st.error("Please enter a valid 5-digit Zipcode.")
-    #APPT_NUM = st.number_input("Number of Previous Appointments",0)
-    #TOTAL_NUMBER_OF_CANCELLATIONS = st.number_input("Number of Cancellations",0)
-    TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT = st.number_input("Number of Not Checked-Out Appointments",0, help="Number of appointments where the patient did not check out correctly.") 
-    if TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT > 50:  
-        st.error("The number of Not Checked-Out Appointments seems too high.")
-    TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT = st.number_input("Number of Successful Appointment",0)
-    if TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT > 200:
-        st.error("The number of Successful Appointments seems too high.")
-    LEAD_TIME = LEAD_TIME
-    #TOTAL_NUMBER_OF_RESCHEDULED = st.number_input("Number of Rescheduled Appointment",0)
-    TOTAL_NUMBER_OF_NOSHOW = st.number_input("Number of No-Shows on record",0)
-    if TOTAL_NUMBER_OF_NOSHOW > 100:
-        st.error("The number of No-Shows seems too high.")
-    #AGE = st.number_input("Age of Patient",0)
-    #if AGE < 0 or AGE > 120:
-    #   st.error("Please enter a valid age.") 
-    IS_REPEAT = st.checkbox("Repeat Patient") 
-    ETHNICITY_STANDARDIZE = st.selectbox("Ethnicity",['Hispanic', 'Non-Hispanic', 'Other'])
-    APPT_TYPE_STANDARDIZE = st.selectbox("Appointment Type",['Follow-up', 'New', 'Other'])
-    RACE_STANDARDIZE =  st.selectbox("Race",['African', 'Asian','European','Middle Eastern', 'North American','South American', 'Other'])
+        if not fdf.empty:
+            ### Prepare data for prediction
+            pdf = fdf.copy() 
+            pdf = pdf[[
+                'AGE', 'CLINIC', 'TOTAL_NUMBER_OF_CANCELLATIONS', 'LEAD_TIME', 'TOTAL_NUMBER_OF_RESCHEDULED', 'TOTAL_NUMBER_OF_NOSHOW',
+                'TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT', 'HOUR_OF_DAY', 'NUM_OF_MONTH'
+            ]]
 
-    
+            ### Load and run the predictor model
+            model = pickle.load(open('model_V2.pkl', 'rb'))
 
-    if st.button("Predict"):
+            ### Label encoding for categorical data
+            le = LabelEncoder()
+            if 'CLINIC' in pdf.columns:
+                le.fit(df['CLINIC'].unique())
+                pdf['CLINIC'] = le.transform(pdf['CLINIC'])
 
-        data = { 
-        'BOOK_DATE': booking_date,
-        'ZIPCODE': ZIPCODE,
-        'CLINIC': CLINIC, 
-        'DAY_OF_WEEK': DAY_OF_WEEK,
-        'WEEK_OF_MONTH': WEEK_OF_MONTH,
-        'LEAD_TIME': LEAD_TIME, 
-        'IS_REPEAT':IS_REPEAT, 
-        'APPT_TYPE_STANDARDIZE':APPT_TYPE_STANDARDIZE,
-       'TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT':int(TOTAL_NUMBER_OF_NOT_CHECKOUT_APPOINTMENT),
-       'TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT':int(TOTAL_NUMBER_OF_SUCCESS_APPOINTMENT), 
-        'TOTAL_NUMBER_OF_NOSHOW':int(TOTAL_NUMBER_OF_NOSHOW), 
-        'ETHNICITY_STANDARDIZE':ETHNICITY_STANDARDIZE, 
-        'RACE_STANDARDIZE':RACE_STANDARDIZE
-       }
-        
-        # print(data)
-        # Convert the data into a DataFrame for easier manipulation
-        df = pd.DataFrame([data])
-        
-        # Encode the categorical columns
-        df = encode_features(df, encoder_dict)
+            ### Predict if there is data to predict on
+            if st.button("Predict") and not pdf.empty:
+                with st.spinner('Processing... Please wait'):
+                    time.sleep(2)
+                    predictions = model.predict(pdf)
+                    probabilities = model.predict_proba(pdf)[:, 1]  # Assuming the second column is the probability of 'YES'
+                    fdf['NO SHOW (Y/N)'] = ['YES' if x == 1 else 'NO' for x in predictions]
+                    fdf['Probability'] = probabilities
+                    st.success('Complete')
 
-        with st.spinner('Processing... Please wait'):
-            time.sleep(2)
-            # Convert the DataFrame into a list of values and make a prediction
-            features_list = df.values
-            prediction = model.predict(features_list)
-            
+                # Display results
+                # Convert MRN to string
+                fdf['MRN'] = fdf['MRN'].astype(str)
+                fdf['APPT_ID'] = fdf['APPT_ID'].astype(str)
 
-        output = int(prediction[0])
-        
-        if output == 1:
-            message = 'The patient will NOT attend.'
-            st.error(message)  # Using st.error to highlight a potential issue (patient not attending)
+                # Extract Date and Time from APPT_DATE
+                fdf['Date'] = fdf['APPT_DATE'].dt.date
+                fdf['Time'] = fdf['APPT_DATE'].dt.time
+
+                st.dataframe(fdf[['MRN', 'APPT_ID', 'Date', 'Time', 'CLINIC', 'NO SHOW (Y/N)', 'Probability']])
+
+                # Download link for the predictions
+                csv = fdf.to_csv(index=False)
+                st.download_button(
+                    label="Download predictions as CSV",
+                    data=csv,
+                    file_name='predictions.csv',
+                    mime='text/csv',
+                )
+            else:
+                st.error("Prediction button not pressed")
         else:
-            message = 'The patient will attend.'
-            st.success(message)
+            st.error("No appointments found for the selected clinics in the given date range")
+    else:
+        st.warning("Please select both a start and end date")
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
-

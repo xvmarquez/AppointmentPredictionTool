@@ -67,7 +67,7 @@ def main():
             ]]
 
             ### Load and run the predictor model
-            model = pickle.load(open('model_V2.pkl', 'rb'))
+            model = pickle.load(open('model.pkl', 'rb'))
 
             ### Label encoding for categorical data
             le = LabelEncoder()

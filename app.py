@@ -33,6 +33,10 @@ def main():
     st.markdown(html_temp, unsafe_allow_html=True)
     st.info("Please fill in the details of the appointment to predict if the patient will attend")
 
+    # Ensure that the default date values fall within the acceptable range
+    default_start = df['APPT_DATE'].min()  # Set default start date to the minimum in the dataset
+    default_end = df['APPT_DATE'].max()    # Set default end date to the maximum in the dataset
+
     ### Date inputs
     col1, col2 = st.columns([1,1])
     with col1:

@@ -33,16 +33,21 @@ def main():
     st.markdown(html_temp, unsafe_allow_html=True)
     st.info("Please fill in the details of the appointment to predict if the patient will attend")
 
-    # Ensure that the default date values fall within the acceptable range
-    default_start = df['APPT_DATE'].min()  # Set default start date to the minimum in the dataset
-    default_end = df['APPT_DATE'].max()    # Set default end date to the maximum in the dataset
+    # Set the min and max dates from the dataset
+    min_date = df['APPT_DATE'].min().date()  # Convert to date only (no time)
+    max_date = df['APPT_DATE'].max().date()  # Convert to date only (no time)
+
+    # Set default values within the allowed range
+    default_start = min_date  # You can change this to any date within the range
+    default_end = max_date    # You can change this to any date within the range
 
     ### Date inputs
     col1, col2 = st.columns([1,1])
     with col1:
-        start_datetime = st.date_input("Start Date", min_value=df['APPT_DATE'].min(), max_value=df['APPT_DATE'].max())
+        start_datetime = st.date_input("Start Date", value=default_start, min_value=min_date, max_value=max_date)
     with col2:
-        end_datetime = st.date_input("End Date", min_value=df['APPT_DATE'].min(), max_value=df['APPT_DATE'].max())
+        end_datetime = st.date_input("End Date", value=default_end, min_value=min_date, max_value=max_date)
+
 
     start_datetime = pd.to_datetime(start_datetime)
     end_datetime = pd.to_datetime(end_datetime)
